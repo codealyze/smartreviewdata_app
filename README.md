@@ -1,4 +1,5 @@
 # smartreviewdata_app
+clone https://github.com/luizgh/sigver_wiwd inside this repo. <br>
 <b> Usage : </b>
 Clone this to models/research/object_detection
 1. Execute the MAIN.py file for starting the whole process of smartreview 
