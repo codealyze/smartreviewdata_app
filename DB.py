@@ -1,12 +1,11 @@
 from google.cloud import bigquery
 
 #Creating bigquery client
-bigquery_client = bigquery.Client()
+bigquery_client = bigquery.Client(project='regal-yew-187323')
 
 class DB(object):
 	def __init__(self, dataset_id, table_id):
 
-	    bigquery_client = bigquery.Client()
 	    #dataset and table id
 	    self.dataset_id = dataset_id
 	    self.table_id = table_id
@@ -49,19 +48,19 @@ class DB(object):
 	    """
 	    Modification needed...
 	    """
-	    query = "SELECT * from `{}.{}` WHERE accno = \'{}\'".format(self.dataset_id, self.table_id, str(accno.encode('utf-8')))#\
-											#	, str(rtn.encode('utf-8')))
-	    #client = bigquery.Client() 
+	    query = "SELECT * from `{}.{}` WHERE accno = \'{}\' and rtno = \'{}\'".\
+        format(self.dataset_id, self.table_id, str(accno.encode('utf-8')), str(rtn.encode('utf-8')))
+	    
 	    query_job = bigquery_client.query(query)
-
+        
+	    results = []
 	    # Print the results.
-	    for row in query_job.result():  # Waits for job to complete.
-		#print "h"
-		if row:
-		    return row
-		else:
-		    return False
-
+	    
+      	    for row in query_job.result():  # Waits for job to complete.
+            	results.append(row)
+		       
+	    return results
+       
 	def query(self, query_):
 	    """
 	    For general query using DML statements.
@@ -72,5 +71,14 @@ class DB(object):
 	    results = []
 	    # Print the results.
 	    for row in query_job.result():  # Waits for job to complete.
-		results.append(row)
+	        results.append(row)
 	    return results
+	    
+    	def image_duplicate_check(self, image_name):
+            check = self.query("SELECT sno FROM `{}.{}` WHERE imageurl LIKE '%{}'".\
+                                       format(self.dataset_id, self.table_id, image_name))
+            
+            if check:
+                return True
+            else:
+                return False    

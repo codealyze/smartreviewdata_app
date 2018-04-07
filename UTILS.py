@@ -3,6 +3,14 @@ import PIL
 import xmltodict
 import os
 from tqdm import tqdm
+import cv2
+
+
+def preprocess(image_path):
+    img = cv2.imread(image_path, 0)
+    blur = cv2.GaussianBlur(img,(5,5),0)
+    ret3,th3 = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    cv2.imwrite(image_path, th3)
 
 def resize(image_path):
     """

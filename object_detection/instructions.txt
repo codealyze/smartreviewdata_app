@@ -1,0 +1,7 @@
+1. Use tf.__version__ == 1.4.0
+2. Use input_tensor as the argument to export the .pb file.
+3. The original exporter.py will create a folder with frozen_inference_graph.pb, this will be used for generating predictions on local machine.
+4. Inside the folder there will be a subfolder containeing saved_model, that is of no use.
+5. Change the exporter.py with the one given as in the freecampcode tutorial for serving.
+6. It will generate a saved_model.pb and variables folder, both will be used for serving.
+

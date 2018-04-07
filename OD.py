@@ -3,11 +3,15 @@ import fnmatch
 import os
 import sys
 import tensorflow as tf
-
+import xmltodict
 from collections import defaultdict
 from io import StringIO
 from matplotlib import pyplot as plt
 from PIL import Image
+from DB import DB
+
+exec(open('config.txt').read())
+database = DB('demo', table_id)
 
 if tf.__version__ < '1.4.0':
     raise ImportError('Please upgrade your tensorflow installation to v1.4.* or later!')
@@ -22,10 +26,10 @@ from utils import label_map_util
 from utils import visualization_utils as vis_util
 
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-PATH_TO_CKPT = './output_pb_image_tensor/frozen_inference_graph.pb'
+PATH_TO_CKPT = 'gs://smartreviewdata/inference/frozen_inference_graph.pb'
 
 # List of the strings that is used to add correct label for each box.
-PATH_TO_LABELS = './train/data/pascal_label_map_check.pbtxt'
+PATH_TO_LABELS = 'gs://smartreviewdata/data/pascal_label_map_check.pbtxt'
 NUM_CLASSES = 9
 
 detection_graph = tf.Graph()
@@ -45,24 +49,19 @@ def load_image_into_numpy_array(image):
   return np.array(image.getdata()).reshape(
       (im_height, im_width, 3)).astype(np.uint8)
 
-
-PATH_TO_TEST_IMAGES_DIR = './testimages'
-TEST_IMAGE_PATHS = [os.path.join(PATH_TO_TEST_IMAGES_DIR, img)\
-                    for img in fnmatch.filter(os.listdir(PATH_TO_TEST_IMAGES_DIR),'*.jpg') ]
-
-
 # Size, in inches, of the output images.
 IMAGE_SIZE = (12, 8)
 
-def generate_bounding_boxes(boxes, classes, category_index):
+def generate_bounding_boxes(boxes, classes, category_index, scores):
     """
     Pack bounding boxes with their class categories into a dict
     """
-    bb_dict = {}
-    for k, v in zip(np.squeeze(classes), np.squeeze(boxes)):
-        if category_index[k]['name'] not in bb_dict.keys():
-            #print ("iter")
-            bb_dict[category_index[k]['name']] = list(v)
+        
+    bb_dict = {}    
+    classes_=classes[scores > 0.5]
+    boxes_ = boxes[scores > 0.5]
+    for c,b in zip(classes_, boxes_):
+        bb_dict[category_index[c]['name']]=list(b)
             
     return bb_dict
 
@@ -75,13 +74,34 @@ def create_image_parts_single_image(image_path, bb_dict):
     im = Image.open(image_path)
     im_width, im_height = im.size
     
+    #Reading template xml to generate xml file
+    data = xmltodict.parse((open('template.xml')))
+    
+    #Writing xml contents
+    data['annotation']['filename'] = image_path.split('/')[-1]
+    data['annotation']['path'] = ''
+    data['annotation']['size']['width'] = im_width
+    data['annotation']['size']['height'] = im_height
+    
     for k in bb_dict.keys():
         y_min = bb_dict[k][0]
         x_min = bb_dict[k][1]
         y_max = bb_dict[k][2]
         x_max = bb_dict[k][3]
-
         
+        #xml part
+        for y in data['annotation']['object']:
+            name = k
+            if k == 'Payto':
+                name = 'Pay To'
+            
+            if y['name'] == name:
+                y['bndbox']['xmin'] = round(x_min*im_width)
+                y['bndbox']['xmax'] = round(x_max*im_width)
+                y['bndbox']['ymin'] = round(y_min*im_height)
+                y['bndbox']['ymax'] = round(y_max*im_height)
+                
+        #imagepart
         if k!='For/Memo':
             
             #Cropping
@@ -98,8 +118,21 @@ def create_image_parts_single_image(image_path, bb_dict):
             #Saving
             cropped_im.save('imageparts/{}/{}.jpg'.format(image_folder_name,k))
             print 'imageparts/{}/{}.jpg'.format(image_folder_name,k)
+    
+    if 'testxmls' not in os.listdir('.'):
+        os.mkdir('testxmls')
+    
+    #Saving xml file
+    with open("testxmls/{}.xml".format(image_path.split('/')[-1].split('.')[0]), "w") as f:
+        f.write(xmltodict.unparse(data))
+
 
 def predict_boxes():
+    
+    PATH_TO_TEST_IMAGES_DIR = './testimages'
+    TEST_IMAGE_PATHS = [os.path.join(PATH_TO_TEST_IMAGES_DIR, img)\
+                        for img in fnmatch.filter(os.listdir(PATH_TO_TEST_IMAGES_DIR),'*.jpg') ]
+    
     with detection_graph.as_default():
         with tf.Session(graph=detection_graph) as sess:
             # Definite input and output Tensors for detection_graph
@@ -112,31 +145,36 @@ def predict_boxes():
             detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
             num_detections = detection_graph.get_tensor_by_name('num_detections:0')
             for image_path in TEST_IMAGE_PATHS:
-                  image = Image.open(image_path)
-                  # the array based representation of the image will be used later in order to prepare the
-                  # result image with boxes and labels on it.
-                  image_np = load_image_into_numpy_array(image)
-                  # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-                  image_np_expanded = np.expand_dims(image_np, axis=0)
-                  # Actual detection.
-                  (boxes, scores, classes, num) = sess.run(
-                      [detection_boxes, detection_scores, detection_classes, num_detections],
-                      feed_dict={image_tensor: image_np_expanded})
-                  # Visualization of the results of a detection.
-                  vis_util.visualize_boxes_and_labels_on_image_array(
-                      image_np,
-                      np.array(np.squeeze(boxes)),
-                      np.squeeze(classes).astype(np.int32),
-                      np.squeeze(scores),
-                      category_index,
-                      use_normalized_coordinates=True,
-                      line_thickness=8)
+                    
+                  #TODO: Check for duplicate image in bigquery (if exists then break)
+                  if database.image_duplicate_check(image_path.split('/')[-1]):
+                        pass
+                  else:      
+                      image = Image.open(image_path)
+                      # the array based representation of the image will be used later in order to prepare the
+                      # result image with boxes and labels on it.
+                      image_np = load_image_into_numpy_array(image)
+                      # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
+                      image_np_expanded = np.expand_dims(image_np, axis=0)
+                      # Actual detection.
+                      (boxes, scores, classes, num) = sess.run(
+                          [detection_boxes, detection_scores, detection_classes, num_detections],
+                          feed_dict={image_tensor: image_np_expanded})
+                      # Visualization of the results of a detection.
+                      vis_util.visualize_boxes_and_labels_on_image_array(
+                          image_np,
+                          np.array(np.squeeze(boxes)),
+                          np.squeeze(classes).astype(np.int32),
+                          np.squeeze(scores),
+                          category_index,
+                          use_normalized_coordinates=True,
+                          line_thickness=8)
 
-                  bb_dict = generate_bounding_boxes(boxes,classes,category_index)
-                  create_image_parts_single_image(image_path, bb_dict)
+                      bb_dict = generate_bounding_boxes(boxes,classes,category_index, scores)
+                      create_image_parts_single_image(image_path, bb_dict)
 
-                  #plt.figure(figsize=IMAGE_SIZE)
-                  #plt.imshow(image_np)
-                  if 'predictions' not in os.listdir('testimages'):
-                      os.mkdir('testimages/predictions/')
-                  plt.imsave('testimages/predictions/{}'.format(image_path.split('/')[-1]), image_np)
+                      #plt.figure(figsize=IMAGE_SIZE)
+                      #plt.imshow(image_np)
+                      #if 'predictions' not in os.listdir('testimages'):
+                       #   os.mkdir('testimages/predictions/')
+                      #plt.imsave('testimages/predictions/{}'.format(image_path.split('/')[-1]), image_np)

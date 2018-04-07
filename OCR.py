@@ -7,6 +7,7 @@ import datetime
 import PIL
 from PIL import Image
 import UTILS
+from OCR_DIGITS import predict_digits
 
 # Imports the Google Cloud client library
 from google.cloud import vision
@@ -41,6 +42,7 @@ def calculate_data(sno, imageparts_dir, train_flag, source, image_dir=None):
     sno = sno
     break_flag = 0
     for img_dir in tqdm(os.listdir(imageparts_dir)):
+        
         sno +=1
         if image_dir:
             img_dir = image_dir
@@ -53,10 +55,10 @@ def calculate_data(sno, imageparts_dir, train_flag, source, image_dir=None):
         date = None
         payto = None
         consumed = None
-        consumed_time = None
+        consumed_time = str(datetime.datetime.now())
         match_score = None 
         mark_review = None 
-        inference_priority = None
+        inference_priority = '1' if img_dir.split('_')[-1] == 'inf' else '0'
         train = train_flag
         fraud = None
         
@@ -65,9 +67,11 @@ def calculate_data(sno, imageparts_dir, train_flag, source, image_dir=None):
 	    while i<3:
 	    	try:
             	   	if img_path == 'Acc#.jpg':
-                          accno = OCR(os.path.join(BASE_DIR,img_path))
-                          if accno != None:
-                            accno = ''.join([e for e in accno.encode('utf-8') if e.isdigit()])
+                          UTILS.preprocess(os.path.join(BASE_DIR,img_path))
+                          
+                          accno = predict_digits(os.path.join(BASE_DIR,img_path))#OCR(os.path.join(BASE_DIR,img_path))
+                          #if accno != None:
+                           # accno = ''.join([e for e in accno.encode('utf-8') if e.isdigit()])
                           accno = None if accno == '' else accno
                           #print "ok"
                 	elif img_path == 'Date.jpg':
@@ -75,10 +79,12 @@ def calculate_data(sno, imageparts_dir, train_flag, source, image_dir=None):
                           #date = OCR(os.path.join(BASE_DIR,img_path))
                           #print "ok"
                 	elif img_path == 'Rtn#.jpg':
+                          UTILS.preprocess(os.path.join(BASE_DIR,img_path))
+                          
+                          rtn = predict_digits(os.path.join(BASE_DIR,img_path))
                           #rtn = OCR(os.path.join(BASE_DIR,img_path))
-                          rtn = OCR(os.path.join(BASE_DIR,img_path))
-                          if rtn != None:
-                            rtn = ''.join([e for e in rtn.encode('utf-8') if e.isdigit()])
+                          #if rtn != None:
+                          #  rtn = ''.join([e for e in rtn.encode('utf-8') if e.isdigit()])
                           rtn = None if rtn == '' else rtn
 		          #print "ok"
                             
@@ -100,7 +106,7 @@ def calculate_data(sno, imageparts_dir, train_flag, source, image_dir=None):
         
         created_at = str(datetime.date.today())
         img_name = '{}/{}.jpg'.format(source, img_dir)
-        xml_name = 'labels/{}.xml'.format(img_dir) if train_flag == 'True' else None
+        xml_name = '{}/{}.xml'.format('labels' if train_flag==True else 'testxmls', img_dir)
             
         row_tuple = [sno, created_at, img_name, xml_name, accno, rtn, date, payto, amount, fraud,\
                              consumed, consumed_time, match_score, mark_review, inference_priority, train]

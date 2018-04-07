@@ -1,0 +1,49 @@
+item {
+  id: 1
+  name: 'Check#'
+}
+
+item {
+  id: 2
+  name: 'Date'
+}
+
+item {
+  id: 3
+  name: 'PayTo'
+}
+
+item {
+  id: 3
+  name: 'Pay To'
+}
+
+item {
+  id: 4
+  name: 'Amount'
+}
+
+item {
+  id: 5
+  name: 'Words'
+}
+
+item {
+  id: 6
+  name: 'For/Memo'
+}
+
+item {
+  id: 7
+  name: 'Signature'
+}
+
+item {
+  id: 8
+  name: 'Acc#'
+}
+
+item {
+  id: 9
+  name: 'Rtn#'
+}
