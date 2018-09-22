@@ -2,7 +2,7 @@ from google.cloud import bigquery
 
 #Creating bigquery client
 
-bigquery_client = bigquery.Client()
+bigquery_client = bigquery.Client(project='regal-yew-187323')
 
 #dataset and table id
 dataset_id = 'demo'

@@ -1,0 +1,10 @@
+*.jpg
+*.jpeg
+*.csv
+*.pbtxt
+*.zip
+inference_OCR/
+inference_OD/
+*.xml
+global_imageparts/
+images/

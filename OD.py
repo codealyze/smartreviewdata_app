@@ -8,10 +8,10 @@ from collections import defaultdict
 from io import StringIO
 from matplotlib import pyplot as plt
 from PIL import Image
-from DB import DB
+#from DB import DB
 
 exec(open('config.txt').read())
-database = DB('demo', table_id)
+#database = DB('demo', table_id)
 
 if tf.__version__ < '1.4.0':
     raise ImportError('Please upgrade your tensorflow installation to v1.4.* or later!')
@@ -22,14 +22,14 @@ if tf.__version__ < '1.4.0':
 # This is needed since the notebook is stored in the object_detection folder.
 sys.path.append("..")
 
-from utils import label_map_util
-from utils import visualization_utils as vis_util
+from object_detection.utils import label_map_util
+from object_detection.utils import visualization_utils as vis_util
 
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-PATH_TO_CKPT = 'gs://smartreviewdata/inference/frozen_inference_graph.pb'
+PATH_TO_CKPT = "./inference_OD/frozen_inference_graph.pb"#'gs://smartreviewdata/inference/frozen_inference_graph.pb'
 
 # List of the strings that is used to add correct label for each box.
-PATH_TO_LABELS = 'gs://smartreviewdata/data/pascal_label_map_check.pbtxt'
+PATH_TO_LABELS = "pascal_label_map_check.pbtxt" #'gs://smartreviewdata/data/pascal_label_map_check.pbtxt'
 NUM_CLASSES = 9
 
 detection_graph = tf.Graph()
@@ -127,9 +127,9 @@ def create_image_parts_single_image(image_path, bb_dict):
         f.write(xmltodict.unparse(data))
 
 
-def predict_boxes():
+def predict_boxes(image_dir):
     
-    PATH_TO_TEST_IMAGES_DIR = './testimages'
+    PATH_TO_TEST_IMAGES_DIR = image_dir#'./testimages'
     TEST_IMAGE_PATHS = [os.path.join(PATH_TO_TEST_IMAGES_DIR, img)\
                         for img in fnmatch.filter(os.listdir(PATH_TO_TEST_IMAGES_DIR),'*.jpg') ]
     
@@ -147,7 +147,7 @@ def predict_boxes():
             for image_path in TEST_IMAGE_PATHS:
                     
                   #TODO: Check for duplicate image in bigquery (if exists then break)
-                  if database.image_duplicate_check(image_path.split('/')[-1]):
+                  if False:#database.image_duplicate_check(image_path.split('/')[-1]):
                         pass
                   else:      
                       image = Image.open(image_path)
