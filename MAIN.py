@@ -35,7 +35,7 @@ def match_query(ROWS):
         query_result = database.query_sign(str(row[4]), str(row[5]))
         print row[2]
         
-        if False:#database.image_duplicate_check(row[2].split('/')[-1]):
+        if database.image_duplicate_check(row[2].split('/')[-1]):
             print ("Duplicate Image")
             pass
             

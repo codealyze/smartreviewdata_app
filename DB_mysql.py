@@ -36,7 +36,7 @@ class DB(object):
         return self.cursor.fetchall()
 
     def query_sign(self, accno, rtn):
-        query = "SELECT * from {} WHERE accno = \'{}\' and rtno = \'{}\'".\
+        query = "SELECT * from {} WHERE accno = \'{}\' or rtno = \'{}\'".\
         format(self.table, str(accno.encode('utf-8')), str(rtn.encode('utf-8')))
         
         self.cursor.execute(query)
