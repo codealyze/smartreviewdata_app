@@ -8,3 +8,4 @@ inference_OD/
 *.xml
 global_imageparts/
 images/
+*.sql
