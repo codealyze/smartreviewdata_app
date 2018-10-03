@@ -82,7 +82,7 @@ def main():
     OD.predict_boxes("./testimages")
     
     #Push xmls to cloud storage
-    print ("\nPushing XMLs to cloud storage ...")
+    #print ("\nPushing XMLs to cloud storage ...")
     #subprocess.call("gsutil mv testxmls/* gs://smartreviewdata/testxmls/", shell=True)
     
     # Calculate Rows data using OCR
