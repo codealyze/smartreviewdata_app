@@ -110,3 +110,4 @@ def main():
 if __name__ == '__main__':
     database = DB("root", "root", "srlogs")
     main()
+    subprocess.call("./export_dump.sh", shell=True)

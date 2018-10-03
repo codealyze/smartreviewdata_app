@@ -1,0 +1,1 @@
+docker exec sqldocker sh -c "mysqldump -u root -proot smartreview > smartreview.sql"

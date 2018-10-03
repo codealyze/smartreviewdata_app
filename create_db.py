@@ -1,7 +1,7 @@
 import mysql.connector
 
 cnx = mysql.connector.connect(user='root', password='root',
-                              host='127.0.0.1',
+                              host='0.0.0.0', port="8001",
                               database='smartreview')
 cursor = cnx.cursor(buffered=True)
 
