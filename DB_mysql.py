@@ -6,7 +6,7 @@ class DB(object):
     def __init__(self, user, password, table):
         
         self.cnx = mysql.connector.connect(user=user, password=password,
-                              host='127.0.0.1',
+                              host='0.0.0.0', port="8001",
                               database='smartreview')
         self.table = table
         

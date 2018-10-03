@@ -8,4 +8,5 @@ sleep 20
 docker exec sqldocker sh -c "mysql -u root -proot < /sqldata2/sqlscript --verbose"
 
 #Load data into sql 
-docker exec sqldocker sh -c "mysql -u root -proot smartreview < /sqldata2/smartreview.sql --verbose"
+docker exec sqldocker sh -c \
+  "mysql -u root -proot smartreview < /sqldata2/`ls sqldata/*sql -t1 | head -n 1 | cut -d "/" -f 2`"

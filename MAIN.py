@@ -56,8 +56,10 @@ def match_query(ROWS):
             
             #result = SIGNATURE.match_signatures(sign1_path, sign2_path)
             result = SIGNATURE.match_signatures_multiple(sign1_path, signs_path)
-            result = np.mean(result[0])
+            print (result)
+	    result = np.mean(result[0])
             
+	    print (result)
             #Delete signature
             #subprocess.call("rm -r *.jpg", shell=True)
             
