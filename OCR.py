@@ -96,9 +96,9 @@ def calculate_data(sno, imageparts_dir, train_flag, source, image_dir=None):
                           if amount != None:
                             amount = ''.join([e for e in amount.encode('utf-8') if e.isdigit()])
                           amount = None if amount == '' else amount                     
-            	except:
+            	except Exception, err:
 		    i += 1
-		    #print ("Exception, Resizing image iter :{}".format(i))
+		    print ("Exception", err)
 		    UTILS.resize(image_path)		
                 finally:
 		    break

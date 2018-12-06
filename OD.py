@@ -8,7 +8,10 @@ from collections import defaultdict
 from io import StringIO
 from matplotlib import pyplot as plt
 from PIL import Image
+import logging, subprocess
+logging.basicConfig(level=logging.DEBUG)
 #from DB import DB
+from utils import publish_message, make_blob_public
 
 #exec(open('config.txt').read())
 #database = DB('demo', table_id)
@@ -76,8 +79,9 @@ def create_image_parts_single_image(image_path, bb_dict):
     im = Image.open(image_path)
     im_width, im_height = im.size
     
+    #print("imgparts")
     #Reading template xml to generate xml file
-    data = xmltodict.parse((open('template.xml')))
+    data = xmltodict.parse((open('data/template.xml')))
     
     #Writing xml contents
     data['annotation']['filename'] = image_path.split('/')[-1]
@@ -112,20 +116,20 @@ def create_image_parts_single_image(image_path, bb_dict):
             
             image_folder_name = image_path.split('/')[-1].split('.')[0]
             
-            if image_folder_name not in os.listdir('imageparts'):
-                os.mkdir('imageparts/{}'.format(image_folder_name))
+            if image_folder_name not in os.listdir('data/imageparts'):
+                os.mkdir('data/imageparts/{}'.format(image_folder_name))
             #print k
             #print image_folder_name
             
             #Saving
-            cropped_im.save('imageparts/{}/{}.jpg'.format(image_folder_name,k))
-            print 'imageparts/{}/{}.jpg'.format(image_folder_name,k)
+            cropped_im.save('data/imageparts/{}/{}.jpg'.format(image_folder_name,k))
+            print('Saving data/imageparts/{}/{}.jpg'.format(image_folder_name,k))
     
-    if 'testxmls' not in os.listdir('.'):
-        os.mkdir('testxmls')
+    if 'testxmls' not in os.listdir('data'):
+        os.mkdir('data/testxmls')
     
     #Saving xml file
-    with open("testxmls/{}.xml".format(image_path.split('/')[-1].split('.')[0]), "w") as f:
+    with open("data/testxmls/{}.xml".format(image_path.split('/')[-1].split('.')[0]), "w") as f:
         f.write(xmltodict.unparse(data))
 
 
@@ -135,6 +139,7 @@ def predict_boxes(image_dir):
     TEST_IMAGE_PATHS = [os.path.join(PATH_TO_TEST_IMAGES_DIR, img)\
                         for img in fnmatch.filter(os.listdir(PATH_TO_TEST_IMAGES_DIR),'*.jpg') ]
     
+    print ("Detection Graph initialising...")
     with detection_graph.as_default():
         with tf.Session(graph=detection_graph) as sess:
             # Definite input and output Tensors for detection_graph
@@ -147,22 +152,27 @@ def predict_boxes(image_dir):
             detection_classes = detection_graph.get_tensor_by_name('detection_classes:0')
             num_detections = detection_graph.get_tensor_by_name('num_detections:0')
             for image_path in TEST_IMAGE_PATHS:
-                    
+       
                   #TODO: Check for duplicate image in bigquery (if exists then break)
                   if False:#database.image_duplicate_check(image_path.split('/')[-1]):
                         pass
-                  else:      
+                  else:     
+                      #print ("read")
                       image = Image.open(image_path)
                       # the array based representation of the image will be used later in order to prepare the
                       # result image with boxes and labels on it.
+                      #print ("read")
                       image_np = load_image_into_numpy_array(image)
+                      #print ("read")
                       # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
                       image_np_expanded = np.expand_dims(image_np, axis=0)
+                      #print ("read")
                       # Actual detection.
                       (boxes, scores, classes, num) = sess.run(
                           [detection_boxes, detection_scores, detection_classes, num_detections],
                           feed_dict={image_tensor: image_np_expanded})
                       # Visualization of the results of a detection.
+                      #print ("read")
                       vis_util.visualize_boxes_and_labels_on_image_array(
                           image_np,
                           np.array(np.squeeze(boxes)),
@@ -171,12 +181,22 @@ def predict_boxes(image_dir):
                           category_index,
                           use_normalized_coordinates=True,
                           line_thickness=8)
-
-                      bb_dict = generate_bounding_boxes(boxes,classes,category_index, scores)
-                      create_image_parts_single_image(image_path, bb_dict)
-
+                      #print ("inside")
+                     
                       #plt.figure(figsize=IMAGE_SIZE)
                       #plt.imshow(image_np)
-                      #if 'predictions' not in os.listdir('testimages'):
-                       #   os.mkdir('testimages/predictions/')
-                      #plt.imsave('testimages/predictions/{}'.format(image_path.split('/')[-1]), image_np)
+                      if 'predictions' not in os.listdir('data'):
+                          os.mkdir('data/predictions/')
+                      #Saving image
+                      plt.imsave('data/predictions/{}'.format(image_path.split('/')[-1]), image_np)
+                      #Transferring image
+                      subprocess.call('gsutil cp data/predictions/{} \
+                      gs://ximistorage/predictions/{}'.format(image_path.split('/')[-1], image_path.split('/')[-1]),shell=True)
+                      
+                      #Making image public
+                      _, image_url = make_blob_public('ximistorage', 'predictions/{}'.\
+                                                               format(image_path.split('/')[-1]))                
+                      #Publishing to pusher
+                      publish_message('test_api','image_data',[image_path.split('/')[-1], image_url])
+                      bb_dict = generate_bounding_boxes(boxes,classes,category_index, scores)
+                      create_image_parts_single_image(image_path, bb_dict)

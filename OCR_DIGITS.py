@@ -27,10 +27,10 @@ from object_detection.utils import visualization_utils as vis_util
 CLOUD_DIR = 'gs://smartreviewdata/'
 
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-PATH_TO_CKPT = "./inference_OCR/frozen_inference_graph.pb" #CLOUD_DIR +'acc_rtn_images/inference/frozen_inference_graph.pb'
+PATH_TO_CKPT = "data/inference_OCR/frozen_inference_graph.pb" #CLOUD_DIR +'acc_rtn_images/inference/frozen_inference_graph.pb'
 
 # List of the strings that is used to add correct label for each box.
-PATH_TO_LABELS = "digits_label_map.pbtxt"#CLOUD_DIR+'acc_rtn_images/data/digits_label_map.pbtxt'
+PATH_TO_LABELS = "data/digits_label_map.pbtxt"#CLOUD_DIR+'acc_rtn_images/data/digits_label_map.pbtxt'
 NUM_CLASSES = 10
 
 detection_graph = tf.Graph()
