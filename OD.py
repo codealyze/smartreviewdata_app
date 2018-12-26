@@ -191,10 +191,10 @@ def predict_boxes(image_dir):
                       plt.imsave('data/predictions/{}'.format(image_path.split('/')[-1]), image_np)
                       #Transferring image
                       subprocess.call('gsutil cp data/predictions/{} \
-                      gs://ximistorage/predictions/{}'.format(image_path.split('/')[-1], image_path.split('/')[-1]),shell=True)
+                      gs://smartreview-backend/predictions/{}'.format(image_path.split('/')[-1], image_path.split('/')[-1]),shell=True)
                       
                       #Making image public
-                      _, image_url = make_blob_public('ximistorage', 'predictions/{}'.\
+                      _, image_url = make_blob_public('smartreview-backend', 'predictions/{}'.\
                                                                format(image_path.split('/')[-1]))                
                       #Publishing to pusher
                       publish_message('test_api','image_data',[image_path.split('/')[-1], image_url])

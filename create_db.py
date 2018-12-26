@@ -2,7 +2,7 @@ import mysql.connector
 
 cnx = mysql.connector.connect(user='root', password='root',
                               host='0.0.0.0', port="8001",
-                              database='smartreview')
+                              database='smartreview', auth_plugin='caching_sha2_password')
 cursor = cnx.cursor(buffered=True)
 
 import pandas as pd
